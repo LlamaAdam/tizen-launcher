@@ -1,0 +1,96 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=1920, initial-scale=1" />
+<title>Launch spike</title>
+<style>
+  :root { color-scheme: dark; }
+  html, body { margin: 0; height: 100%; background: #000; color: #fff;
+    font-family: "Outfit", Arial, sans-serif; }
+  body { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 40px; }
+  h1 { font-weight: 300; font-size: 44px; letter-spacing: -0.02em; margin: 0; }
+  #row { display: flex; gap: 28px; }
+  button {
+    width: 300px; height: 150px; font-size: 30px; border-radius: 22px;
+    border: 3px solid transparent; background: #1b1b1f; color: #fff; cursor: pointer;
+  }
+  button:focus { outline: none; border-color: #fff; background: #2a2a31; transform: scale(1.04); }
+  #log { font-size: 24px; color: #9ad; min-height: 34px; max-width: 1600px; text-align: center; }
+</style>
+</head>
+<body>
+  <h1>TizenBrew launch spike</h1>
+  <div id="row"></div>
+  <div id="log">Use the arrows and OK (Enter). Each button tries to open a native app.</div>
+<script>
+  var APPS = [
+    { title: "Netflix",     id: "org.tizen.netflix-app" },
+    { title: "Prime Video", id: "org.tizen.primevideo" },
+    { title: "YouTube",     id: "9Ur5IzDKqV.TizenYouTube" },
+    { title: "Disney+",     id: "MCmYXNxgcu.DisneyPlus" }
+  ];
+  var log = document.getElementById("log");
+  function say(msg) { log.textContent = msg; }
+
+  function launch(app) {
+    say("Launching " + app.title + " …");
+    try {
+      tizen.application.launch(
+        app.id,
+        function () { say("OK: launched " + app.title + " via tizen.application.launch"); },
+        function (e) { fallback(app, "launch error: " + (e && e.message ? e.message : e)); }
+      );
+    } catch (e) {
+      fallback(app, "launch threw: " + (e && e.message ? e.message : e));
+    }
+  }
+
+  function fallback(app, why) {
+    try {
+      var ctrl = new tizen.ApplicationControl("http://tizen.org/appcontrol/operation/default");
+      tizen.application.launchAppControl(
+        ctrl, app.id,
+        function () { say("OK: launched " + app.title + " via launchAppControl (" + why + ")"); },
+        function (e2) { say("FAIL " + app.title + " — " + why + " | appControl: " + (e2 && e2.message ? e2.message : e2)); }
+      );
+    } catch (e2) {
+      say("FAIL " + app.title + " — " + why + " | appControl threw: " + (e2 && e2.message ? e2.message : e2));
+    }
+  }
+
+  var row = document.getElementById("row");
+  var buttons = APPS.map(function (app, i) {
+    var b = document.createElement("button");
+    b.textContent = app.title;
+    b.addEventListener("click", function () { launch(app); });
+    row.appendChild(b);
+    return b;
+  });
+
+  var focus = 0;
+  function setFocus(i) { focus = (i + buttons.length) % buttons.length; buttons[focus].focus(); }
+
+  // Register TV remote keys where available, then handle keydown.
+  try {
+    if (window.tizen && tizen.tvinputdevice) {
+      ["ArrowLeft","ArrowRight","ArrowUp","ArrowDown","Enter"].forEach(function (k) {
+        try { tizen.tvinputdevice.registerKey(k); } catch (e) {}
+      });
+    }
+  } catch (e) {}
+
+  document.addEventListener("keydown", function (ev) {
+    switch (ev.keyCode) {
+      case 37: setFocus(focus - 1); break;            // Left
+      case 39: setFocus(focus + 1); break;            // Right
+      case 13: launch(APPS[focus]); break;            // Enter / OK
+      default: return;
+    }
+    ev.preventDefault();
+  });
+
+  setFocus(0);
+</script>
+</body>
+</html>

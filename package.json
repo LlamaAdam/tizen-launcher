@@ -1,0 +1,9 @@
+{
+  "name": "tizen-launcher",
+  "version": "0.0.1",
+  "packageType": "app",
+  "appName": "Clean Launcher",
+  "description": "A clean, Apple-TV-style home screen for Samsung Tizen TVs, run via TizenBrew. (Launch spike.)",
+  "appPath": "index.html",
+  "keys": ["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight", "Enter"]
+}
